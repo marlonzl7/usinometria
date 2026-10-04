@@ -1,0 +1,1 @@
+ALTER TABLE job RENAME COLUMN job_id TO id;
