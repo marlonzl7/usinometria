@@ -117,6 +117,31 @@ Com o banco já rodando (`docker compose up -d db`), execute:
 A aplicação usa por padrão `jdbc:postgresql://localhost:5432/usinometria`
 (ver `application.properties`).
 
+## Rodando os testes
+
+A suíte de testes do `JobController` (`JobControllerTest`) não depende de
+banco — usa o `JobService` mockado e roda isoladamente.
+
+O teste de contexto (`ApiApplicationTests`) sobe a aplicação Spring Boot
+completa, incluindo datasource e Flyway, então precisa do banco disponível
+e das variáveis de ambiente carregadas no shell antes de rodar:
+
+```bash
+cd api
+docker compose up -d db
+export $(grep -v '^#' .env | xargs)
+mvn test
+```
+
+> `mvn spring-boot:run` lê variáveis via `-Dspring-boot.run.profiles=local`,
+> mas `mvn test` não carrega o `.env` automaticamente — por isso o `export`
+> é necessário aqui também.
+
+**Nota:** isso cria um acoplamento entre o teste de contexto e o ambiente
+local (banco rodando, variáveis carregadas). Um perfil de teste dedicado
+(H2 ou Testcontainers) eliminaria essa dependência e é um candidato natural
+para quando o projeto configurar CI — por ora, mantido simples.
+
 ## Migrations
 
 O schema é gerenciado pelo Flyway. As migrations ficam em
