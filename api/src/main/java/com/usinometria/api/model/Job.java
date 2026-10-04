@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
@@ -22,13 +22,13 @@ public class Job {
     private String name;
 
     @Column(precision = 12, scale = 2)
-    private Double volume;
+    private BigDecimal volume;
 
     @Column(precision = 7, scale = 2)
-    private Double estimatedTime;
+    private BigDecimal estimatedTime;
 
     @Column(precision = 7, scale = 2)
-    private Double actualTime;
+    private BigDecimal actualTime;
 
     @Enumerated(EnumType.STRING)
     private Status status;
@@ -40,7 +40,6 @@ public class Job {
 
     private Instant canceledAt;
 
-    @UpdateTimestamp
     private Instant editedAt;
 
 }
