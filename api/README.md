@@ -19,13 +19,14 @@ volume de material a ser removido, usando uma taxa empírica derivada do
 histórico de trabalhos já concluídos:
 
 ```
-R = ΣVolume / ΣTempoReal   (taxa global, cm³/h)
+R = ΣVolume / ΣTempoReal   (taxa global, mm³/h)
 T = Volume / R             (tempo estimado, h)
 ```
 
 A taxa não é armazenada separadamente: os totais são obtidos via
-`SUM()` sobre a tabela `job`, evitando duplicação e inconsistência entre
-histórico e estatísticas.
+`SUM()` sobre a tabela `job` (apenas trabalhos `COMPLETED`), evitando
+duplicação e inconsistência entre histórico e estatísticas. Trabalhos
+`CANCELED` e `IN_PROGRESS` nunca entram no cálculo.
 
 Cada trabalho passa pelos estados:
 
@@ -33,6 +34,45 @@ Cada trabalho passa pelos estados:
 IN_PROGRESS → COMPLETED
             → CANCELED
 ```
+
+## Unidades
+
+- Volume: **mm³**
+- Tempo (estimado e real): **horas** (decimal)
+
+## Endpoints
+
+| Método | Rota                    | Descrição                                          |
+|--------|-------------------------|----------------------------------------------------|
+| POST   | `/jobs`                 | Cria trabalho (`IN_PROGRESS`) e calcula a estimativa |
+| GET    | `/jobs?status=`         | Lista trabalhos (mais recentes primeiro)           |
+| GET    | `/jobs/{id}`            | Busca um trabalho                                  |
+| GET    | `/jobs/rate`            | Taxa atual e quantidade de trabalhos que a sustentam |
+| PATCH  | `/jobs/{id}/complete`   | Registra o tempo real e conclui                    |
+| PATCH  | `/jobs/{id}/cancel`     | Cancela um trabalho em fabricação                  |
+| PATCH  | `/jobs/{id}`            | Edita (parcialmente) um trabalho concluído         |
+
+`difference` (retornado ao concluir) = `actualTime - estimatedTime`.
+Positivo indica que o trabalho demorou mais que o estimado (resultado ruim);
+negativo indica que terminou antes.
+
+### Formato de erro
+
+Sucesso retorna o objeto direto (sem envelope). Erros seguem:
+
+```json
+{
+  "status": 409,
+  "error": "UNEXPECTED_STATUS_JOB",
+  "message": "Trabalho com status inesperado. Esperava: IN_PROGRESS",
+  "details": null,
+  "timestamp": "2026-09-27T14:10:00Z"
+}
+```
+
+`details` só é preenchido em erros de validação de campo
+(`["volume: deve ser maior que zero"]`). `error` é um código estável
+para o frontend tratar programaticamente.
 
 ## Requisitos
 
@@ -83,10 +123,12 @@ O schema é gerenciado pelo Flyway. As migrations ficam em
 `src/main/resources/db/migration` e são aplicadas automaticamente na
 inicialização da aplicação (`spring.flyway.enabled=true`).
 
-| Versão | Descrição                              |
-|--------|------------------------------------------|
-| V001   | Cria a tabela `job` e suas constraints    |
-| V002   | Insere o trabalho inicial (seed)          |
+| Versão | Descrição                                   |
+|--------|----------------------------------------------|
+| V001   | Cria a tabela `job` e suas constraints        |
+| V002   | Insere o trabalho inicial (seed)              |
+| V003   | Renomeia a coluna `job_id` para `id`          |
+| V004   | Corrige o volume do seed inicial (0,77 cm³ = 770 mm³) |
 
 > A entidade `Job` é validada contra o schema existente
 > (`ddl-auto=validate`) — qualquer alteração de schema deve ser feita
@@ -97,27 +139,26 @@ inicialização da aplicação (`spring.flyway.enabled=true`).
 
 Tabela `job`:
 
-| Coluna           | Tipo          | Observação                              |
-|-------------------|---------------|------------------------------------------|
-| `job_id`          | BIGINT        | PK, identity                              |
-| `name`            | VARCHAR(150)  |                                            |
-| `volume`          | DECIMAL(12,2) | Volume a remover, em cm³                  |
-| `estimated_time`  | DECIMAL(7,2)  | Tempo estimado, em horas                  |
-| `actual_time`     | DECIMAL(7,2)  | Tempo real, preenchido ao concluir        |
-| `status`          | VARCHAR(20)   | `IN_PROGRESS`, `COMPLETED`, `CANCELED`    |
-| `created_at`      | TIMESTAMPTZ   |                                            |
-| `finished_at`     | TIMESTAMPTZ   | Obrigatório se `COMPLETED`                |
-| `canceled_at`     | TIMESTAMPTZ   | Obrigatório se `CANCELED`                 |
-| `edited_at`       | TIMESTAMPTZ   | Atualizado automaticamente                |
+| Coluna           | Tipo          | Observação                                     |
+|-------------------|---------------|-------------------------------------------------|
+| `id`              | BIGINT        | PK, identity                                     |
+| `name`            | VARCHAR(150)  |                                                   |
+| `volume`          | DECIMAL(12,2) | Volume a remover, em mm³                         |
+| `estimated_time`  | DECIMAL(7,2)  | Tempo estimado, em horas                         |
+| `actual_time`     | DECIMAL(7,2)  | Tempo real, preenchido ao concluir               |
+| `status`          | VARCHAR(20)   | `IN_PROGRESS`, `COMPLETED`, `CANCELED`           |
+| `created_at`      | TIMESTAMPTZ   |                                                   |
+| `finished_at`     | TIMESTAMPTZ   | Obrigatório se `COMPLETED`                       |
+| `canceled_at`     | TIMESTAMPTZ   | Obrigatório se `CANCELED`                        |
+| `edited_at`       | TIMESTAMPTZ   | Preenchido apenas quando um trabalho concluído é editado |
 
 Constraints garantem consistência entre `status` e as datas
 (`finished_at`/`canceled_at`) diretamente no banco.
 
 ## Status do projeto
 
-🚧 Em desenvolvimento inicial — ainda sem endpoints expostos
-(`JobController` é apenas um placeholder até a primeira funcionalidade
-ser implementada).
+🚧 Em desenvolvimento — endpoints do V1 implementados; frontend (React/PWA)
+ainda não iniciado.
 
 ## Escopo fora do V1
 
