@@ -125,6 +125,8 @@ public class JobController {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "409", description = "Trabalho não está IN_PROGRESS (UNEXPECTED_STATUS_JOB)",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "415", description = "Content-Type diferente de application/json (UNSUPPORTED_MEDIA_TYPE)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<SetCompleteJobResponse> setCompleteJob(
             @Parameter(description = "ID do trabalho", example = "25") @PathVariable Long id,
             @RequestBody @Valid SetCompleteJobRequest request
@@ -172,6 +174,8 @@ public class JobController {
     @ApiResponse(responseCode = "404", description = "Trabalho não existe (RESOURCE_NOT_FOUND)",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "409", description = "Trabalho não está COMPLETED (UNEXPECTED_STATUS_JOB)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "415", description = "Content-Type diferente de application/json (UNSUPPORTED_MEDIA_TYPE)",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<UpdateCompleteJobResponse> updateCompleteJob(
             @Parameter(description = "ID do trabalho", example = "25") @PathVariable Long id,
