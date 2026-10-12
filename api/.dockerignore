@@ -1,0 +1,14 @@
+target/
+.git/
+.idea/
+.vscode/
+.mvn/wrapper/maven-wrapper.jar
+
+# Segredos nunca entram na imagem
+.env
+.env.*
+!.env.example
+application-local.properties
+
+docker-compose*.yml
+*.md
