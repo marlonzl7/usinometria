@@ -290,7 +290,8 @@ class JobControllerTest {
         mockMvc.perform(post("/jobs").contentType(MediaType.TEXT_PLAIN).content("qualquer coisa"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.status").value(415))
-                .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"));
+                .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"))
+                .andExpect(jsonPath("$.message", not(emptyString())));
 
         verifyNoInteractions(service);
     }
