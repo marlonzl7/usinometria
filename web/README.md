@@ -1,16 +1,47 @@
-# React + Vite
+# Usinometria — Web (PWA)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend do estimador de tempo de usinagem. React + Vite + TypeScript.
 
-Currently, two official plugins are available:
+## Rodando em desenvolvimento
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+cd web
+npm install
+npm run dev
+```
 
-## React Compiler
+Requer a API rodando em `http://localhost:8080` (ver `api/README.md`). O proxy do Vite
+encaminha `/api/*` para a API removendo o prefixo, como o Traefik fará em produção;
+o front chama sempre `/api/...`, sem CORS.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Scripts
 
-## Expanding the Oxlint configuration
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (service worker desligado) |
+| `npm run build` | Checagem de tipos + build de produção (gera manifest e service worker) |
+| `npm run preview` | Serve o build em `localhost:4173`, com o mesmo proxy `/api`; use para testar o PWA |
+| `npm test` | Vitest (funções puras) |
+| `npm run lint` | oxlint |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Estrutura
+
+```
+src/
+  app/        roteador, layout com navegação, QueryClient, estilos
+  pages/      Dashboard, Trabalhos, Histórico (compõem as features)
+  features/   uma pasta por funcionalidade: View (componente), ViewModel (hook), Model (API)
+  shared/     cliente axios, erros, utilitários, componentes base
+```
+
+Regras: `features` não importam umas das outras; `shared` não importa `features`.
+
+## Decisões de arquitetura
+
+- **Mesma origem** (Traefik): front em `/`, API em `/api`.
+- **TanStack Query** para dados da API, encapsulado em hooks por funcionalidade.
+- **PWA** online-only: o service worker guarda só o shell do app; respostas da API nunca são
+  cacheadas e `/api` fica fora do fallback de navegação.
+- Erros da API são normalizados em `ApiError` (`shared/api/errors.ts`); a UI usa o mapa de
+  textos, nunca o `message` cru da API.
+- Volume em mm³; a API usa horas decimais e a interface mostra hh:mm.
