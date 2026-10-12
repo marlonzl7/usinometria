@@ -6,11 +6,10 @@ import java.time.Instant;
 import java.util.List;
 
 public record ErrorResponse(
-        @Schema(description = "Código HTTP", example = "409")
+        @Schema(description = "Código HTTP")
         int status,
 
         @Schema(description = "Código estável do erro, para tratamento programático",
-                example = "UNEXPECTED_STATUS_JOB",
                 allowableValues = {"INVALID_PARAMETER", "VALIDATION_ERROR", "MALFORMED_REQUEST",
                         "UNSUPPORTED_MEDIA_TYPE", "NO_HISTORY_AVAILABLE", "ESTIMATE_OUT_OF_RANGE",
                         "RESOURCE_NOT_FOUND", "UNEXPECTED_STATUS_JOB", "EMPTY_UPDATE_REQUEST",
