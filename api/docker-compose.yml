@@ -1,29 +1,40 @@
+name: usinometria
+
 services:
   db:
     image: postgres:16-alpine
-    container_name: usinometria-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-usinometria}
-      POSTGRES_USER: ${DB_USER:-usinometria_app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+      POSTGRES_DB: usinometria
+      POSTGRES_USER: usinometria_app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
     volumes:
       - usinometria_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usinometria_app -d usinometria"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
   api:
     build: .
-    container_name: usinometria-api
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://db:5432/usinometria
       DB_USER: usinometria_app
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
 volumes:
   usinometria_db_data:
